@@ -424,15 +424,26 @@ do_modules() {
     fi;
     cd $AKHOME/modules;
     ui_print " " "Creating kernel helper systemless module...";
-    if [ -d /data/adb/magisk -a -f $AKHOME/magisk_patched ] || [ -d /data/data/me.weishu.kernelsu -a -f $AKHOME/kernelsu_patched ]; then
+    if [ -d /data/adb/magisk ] && [ -f $AKHOME/magisk_patched ] || { [ -f /data/adb/ksud ] || [ -d /data/adb/ksu ]; } && [ -f $AKHOME/kernelsu_patched ]; then
       umask=$(umask);
       moddir=/data/adb/modules/ak3-helper;
       # this may be the initial KernelSU install or first module so setup as needed
       if [ -f $AKHOME/kernelsu_patched ]; then
         umask 077;
         if [ ! -f /data/adb/ksud ]; then
-          cp -f /data/app/*/me.weishu.kernelsu*/lib/*/libksud.so /data/adb/ksud;
-          chmod 755 /data/adb/ksud;
+          ksud_src="";
+          for candidate in /data/app/*/com.zsu.zsu*/lib/*/libksud.so /data/app/*/*/lib/*/libksud.so; do
+            if [ -f "$candidate" ]; then
+              ksud_src="$candidate";
+              break;
+            fi;
+          done;
+          if [ "$ksud_src" ]; then
+            cp -f "$ksud_src" /data/adb/ksud;
+            chmod 755 /data/adb/ksud;
+          else
+            ui_print " " "Warning: ZSU ksud library not found; skipped helper bootstrap!";
+          fi;
         fi;
         if [ ! -d /data/adb/modules ]; then
           mkdir -p /data/adb/modules;
