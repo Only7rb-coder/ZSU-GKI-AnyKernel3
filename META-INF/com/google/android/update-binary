@@ -245,22 +245,32 @@ restore_env() {
   umount -l /dev/random) 2>/dev/null;
 }
 setup_bb() {
-  local arch32 bb;
-  for arch32 in x86 arm; do
-    if [ -d $AKHOME/tools/$arch32 ]; then
-      bb=$AKHOME/tools/$arch32/busybox;
-      chmod 755 $bb;
-      $bb >/dev/null 2>&1;
+  local arch bb candidate;
+
+  # Prefer a tool bundle matching the recovery CPU architecture. The legacy
+  # tools/busybox is 32-bit ARM and cannot execute on many modern arm64-only
+  # recovery environments; those shells then interpret the ELF as text and
+  # report a misleading syntax error.
+  for arch in arm64 aarch64 x86_64 x86 arm; do
+    candidate=$AKHOME/tools/$arch/busybox;
+    if [ -f "$candidate" ]; then
+      chmod 755 "$candidate";
+      "$candidate" --help >/dev/null 2>&1;
       if [ $? == 0 ]; then
-        $bb mv -f $AKHOME/tools/$arch32/* $AKHOME/tools;
+        "$candidate" mv -f "$AKHOME/tools/$arch"/* "$AKHOME/tools";
         break;
       fi;
     fi;
   done;
+
   bb=$AKHOME/tools/busybox;
-  chmod 755 $bb;
-  $bb chmod -R 755 tools bin;
-  $bb --install -s bin;
+  if [ ! -f "$bb" ]; then
+    abort "No compatible BusyBox found for this recovery architecture. Aborting...";
+  fi;
+  chmod 755 "$bb";
+  "$bb" --help >/dev/null 2>&1 || abort "BusyBox cannot execute on this recovery architecture. Aborting...";
+  "$bb" chmod -R 755 tools bin;
+  "$bb" --install -s bin;
 }
 debugging() {
   local debug log path;
