@@ -15,15 +15,10 @@ supported.patchlevels=
 supported.vendorpatchlevels=
 '; }
 
-### boot files attributes
-boot_attributes() {
-  set_perm_recursive 0 0 755 644 "$RAMDISK"/*;
-  set_perm_recursive 0 0 750 750 "$RAMDISK"/init* "$RAMDISK"/sbin;
-}
-
 ### boot shell variables
-# GKI kernels are carried by the boot partition. AnyKernel resolves the
-# device-specific by-name path and active A/B slot at install time.
+# GKI kernel-only boot images, including Android header v4 images with
+# RAMDISK_SZ=0, must be split and flashed without unpacking/repacking a ramdisk.
+# AnyKernel resolves the device-specific by-name path and active A/B slot.
 BLOCK=boot;
 IS_SLOT_DEVICE=auto;
 RAMDISK_COMPRESSION=auto;
@@ -33,8 +28,8 @@ PATCH_VBMETA_FLAG=auto;
 . tools/ak3-core.sh;
 
 ### boot install
-dump_boot;
-write_boot;
+split_boot;
+flash_boot;
 ## end boot install
 
 ### end AnyKernel
